@@ -154,13 +154,13 @@ PluginComponent {
         const o = (root.org || "").trim();
 
         function prArgs() {
-            const base = [root.ghBinary, "search", "prs", "--author=@me", "--state=open", "--json", "number,title,url,repository", "--limit", "15"];
+            const base = [root.ghBinary, "search", "prs", "archived:false", "--author=@me", "--state=open", "--json", "number,title,url,repository", "--limit", "15"];
             if (o) base.push("--owner=" + o);
             return base;
         }
 
         function issueArgs() {
-            const base = [root.ghBinary, "search", "issues", "--assignee=@me", "--state=open", "--json", "number,title,url,repository", "--limit", "15"];
+            const base = [root.ghBinary, "search", "issues", "archived:false", "--assignee=@me", "--state=open", "--json", "number,title,url,repository", "--limit", "15"];
             if (o) base.push("--owner=" + o);
             return base;
         }
