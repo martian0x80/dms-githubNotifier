@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import qs.Common
 import qs.Services
@@ -14,9 +15,6 @@ PluginComponent {
     property string ghBinary: pluginData.ghBinary || "gh"
     property string org: pluginData.org || ""
     property int refreshInterval: pluginData.refreshInterval || 60
-
-    property string faGithubGlyph: "\uf09b" // Font Awesome GitHub (brands)
-    property string faFamily: "Font Awesome 6 Brands, Font Awesome 5 Brands, Font Awesome 6 Free, Font Awesome 5 Free"
 
     function asBool(v, defaultValue) {
         if (v === undefined || v === null)
@@ -42,6 +40,8 @@ PluginComponent {
     property var prList: []
     property var issueList: []
     property string profileUrl: ""
+    property string avatarUrl: ""
+    property string username: ""
 
 
     readonly property int totalCount: (showPRs ? prCount : 0) + (showIssues ? issuesCount : 0)
@@ -112,8 +112,15 @@ PluginComponent {
                 }
 
                 if (!root.profileUrl) {
-                    Proc.runCommand("githubNotifier.getProfile", [root.ghBinary, "api", "user", "--jq", ".html_url"], (pOut, pExit) => {
-                        if (pExit === 0) root.profileUrl = pOut.trim();
+                    Proc.runCommand("githubNotifier.getProfile", [root.ghBinary, "api", "user", "--jq", "{html_url,avatar_url,login}"], (pOut, pExit) => {
+                        if (pExit === 0) {
+                            try {
+                                const u = JSON.parse(pOut.trim());
+                                root.profileUrl = u.html_url || "";
+                                root.avatarUrl = u.avatar_url || "";
+                                root.username = u.login || "";
+                            } catch (_) {}
+                        }
                     }, 1000);
                 }
 
@@ -221,12 +228,11 @@ PluginComponent {
         Row {
             spacing: Theme.spacingXS
 
-            StyledText {
-                text: root.faGithubGlyph
-                font.family: root.faFamily
-                font.pixelSize: Theme.iconSize - 7
-                color: root.lastError ? Theme.error : (root.totalCount > 0 ? Theme.primary : (Theme.widgetIconColor || Theme.surfaceText))
+            DankSVGIcon {
+                source: Qt.resolvedUrl("github.svg")
+                size: Theme.iconSize - 7
                 anchors.verticalCenter: parent.verticalCenter
+                colorOverride: root.lastError ? Theme.error : (root.totalCount > 0 ? Theme.primary : (Theme.widgetIconColor || Theme.surfaceText))
             }
 
             StyledText {
@@ -244,12 +250,11 @@ PluginComponent {
         Column {
             spacing: 2
 
-            StyledText {
-                text: root.faGithubGlyph
-                font.family: root.faFamily
-                font.pixelSize: 20
-                color: root.lastError ? Theme.error : (root.totalCount > 0 ? Theme.primary : (Theme.widgetIconColor || Theme.surfaceText))
-                anchors.horizontalCenter: parent.horizontalCenter
+            DankSVGIcon {
+                source: Qt.resolvedUrl("github.svg")
+                size: Theme.iconSize - 7
+                anchors.verticalCenter: parent.verticalCenter
+                colorOverride: root.lastError ? Theme.error : (root.totalCount > 0 ? Theme.primary : (Theme.widgetIconColor || Theme.surfaceText))
             }
 
             StyledText {
@@ -492,8 +497,6 @@ PluginComponent {
                         width: 40
                         height: 40
                         anchors.verticalCenter: parent.verticalCenter
-                        scale: profileArea.pressed ? 0.9 : (profileArea.containsMouse ? 1.1 : 1.0)
-                        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
 
                         MouseArea {
                             id: profileArea
@@ -504,23 +507,23 @@ PluginComponent {
                             onClicked: if (root.profileUrl) root.openUrl(root.profileUrl)
                         }
 
-                        Rectangle {
+                        DankCircularImage {
                             anchors.fill: parent
-                            radius: 20
-                            color: profileArea.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.3) : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.2)
+                            imageSource: root.avatarUrl
+                            fallbackIcon: ""
+                            border.width: profileArea.containsMouse ? 2 : 0
+                            border.color: Theme.primary
+
+                            DankSVGIcon {
+                                source: Qt.resolvedUrl("github.svg")
+                                size: 22
+                                anchors.centerIn: parent
+                                colorOverride: Theme.primary
+                                visible: parent.imageStatus !== Image.Ready
+                            }
                         }
 
-                        StyledText {
-                            text: root.faGithubGlyph
-                            font.family: root.faFamily
-                            font.pixelSize: 22
-                            color: Theme.primary
-                            anchors.centerIn: parent
-                            scale: profileArea.containsMouse ? 1.2 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
-                        }
-
-                        DankRipple { 
+                        DankRipple {
                             id: profileRipple
                             rippleColor: Theme.surfaceText
                             cornerRadius: 20
@@ -538,7 +541,7 @@ PluginComponent {
                         spacing: 2
 
                         StyledText {
-                            text: "GitHub Notifier"
+                            text: root.username ? root.username : "GitHub Notifier"
                             font.bold: true
                             font.pixelSize: Theme.fontSizeLarge
                             color: Theme.surfaceText
