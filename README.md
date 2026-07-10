@@ -70,3 +70,8 @@ The widget parses JSON output (supports `total_count`, arrays, and NDJSON).
 
 - If counts are zero but the CLI shows results, check `ghBinary` setting and ensure `gh` works in a terminal: `gh search prs --author=@me --state=open --json number`
 - If `gh` is not authenticated, run: `gh auth login`
+
+## Contributors
+
+- [Lucas Mariani](https://github.com/psyreactor) — author
+- [rochacbruno](https://github.com/rochacbruno) — exclude archived repositories ([#5](https://github.com/psyreactor/dms-githubNotifier/pull/5))
