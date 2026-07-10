@@ -75,3 +75,4 @@ The widget parses JSON output (supports `total_count`, arrays, and NDJSON).
 
 - [Lucas Mariani](https://github.com/psyreactor) — author
 - [rochacbruno](https://github.com/rochacbruno) — exclude archived repositories ([#5](https://github.com/psyreactor/dms-githubNotifier/pull/5))
+- [Thomas-Philippot](https://github.com/Thomas-Philippot) — header with user info and SVG icon ([#2](https://github.com/psyreactor/dms-githubNotifier/pull/2))
