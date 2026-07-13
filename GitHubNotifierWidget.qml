@@ -31,6 +31,7 @@ PluginComponent {
 
     // State
     property bool loading: false
+    property bool refreshPending: false
     property string lastError: ""
     property bool ghOk: true
     property bool authOk: true
@@ -70,6 +71,15 @@ PluginComponent {
         root.lastError = msg || "";
     }
 
+    function completeRefresh() {
+        const shouldRefresh = root.refreshPending;
+        root.refreshPending = false;
+        root.loading = false;
+
+        if (shouldRefresh)
+            root.refresh();
+    }
+
     function prWebUrl() {
         return "https://github.com/pulls/authored";
     }
@@ -83,6 +93,11 @@ PluginComponent {
     }
 
     function refresh() {
+        if (root.loading) {
+            root.refreshPending = true;
+            return;
+        }
+
         root.loading = true;
         root.setError("");
         root.ghOk = true;
@@ -93,10 +108,10 @@ PluginComponent {
             if (exitCode !== 0) {
                 root.ghOk = false;
                 root.authOk = false;
-                root.loading = false;
                 root.prCount = 0;
                 root.issuesCount = 0;
                 root.setError("Could not execute gh. Is it installed and in PATH?");
+                root.completeRefresh();
                 return;
             }
 
@@ -104,10 +119,10 @@ PluginComponent {
             Proc.runCommand("githubNotifier.authStatus", [root.ghBinary, "auth", "status"], (authOut, authExit) => {
                 if (authExit !== 0) {
                     root.authOk = false;
-                    root.loading = false;
                     root.prCount = 0;
                     root.issuesCount = 0;
                     root.setError("gh is not authenticated. Run: gh auth login");
+                    root.completeRefresh();
                     return;
                 }
 
@@ -121,13 +136,13 @@ PluginComponent {
                                 root.username = u.login || "";
                             } catch (_) {}
                         }
-                    }, 1000);
+                    }, 0, 10000);
                 }
 
                 root.fetchCounts();
 
-            }, 400);
-        }, 300);
+            }, 0, 10000);
+        }, 0, 10000);
     }
 
     function parseGitHubList(stdout) {
@@ -173,20 +188,22 @@ PluginComponent {
         }
 
 
-        const nextAfterPRs = () => {
-            if (!root.showIssues) return finish();
-            Proc.runCommand("githubNotifier.issueList", issueArgs(), (stdout, exitCode) => {
-                if (exitCode === 0) {
-                    root.issueList = parseGitHubList(stdout);
-                    root.issuesCount = root.issueList.length;
-                }
-                finish();
-            }, 5000);
+        const finish = () => {
+            root.completeRefresh();
         };
 
+        const tasks = [];
+        if (root.showPRs) tasks.push("pr");
+        if (root.showIssues) tasks.push("issue");
 
-        const finish = () => {
-            root.loading = false;
+        if (tasks.length === 0) {
+            finish();
+            return;
+        }
+
+        let remaining = tasks.length;
+        const done = () => {
+            if (--remaining === 0) finish();
         };
 
         if (root.showPRs) {
@@ -195,10 +212,18 @@ PluginComponent {
                     root.prList = parseGitHubList(stdout);
                     root.prCount = root.prList.length;
                 }
-                nextAfterPRs();
-            }, 5000);
-        } else {
-            nextAfterPRs();
+                done();
+            }, 0, 10000);
+        }
+
+        if (root.showIssues) {
+            Proc.runCommand("githubNotifier.issueList", issueArgs(), (stdout, exitCode) => {
+                if (exitCode === 0) {
+                    root.issueList = parseGitHubList(stdout);
+                    root.issuesCount = root.issueList.length;
+                }
+                done();
+            }, 0, 10000);
         }
 
     }
@@ -634,7 +659,7 @@ PluginComponent {
                     text: root.lastError
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
-                    color: Theme.onErrorContainer
+                    color: Theme.errorContainerText
                     font.pixelSize: Theme.fontSizeSmall
                 }
             }
