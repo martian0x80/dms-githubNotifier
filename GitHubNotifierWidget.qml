@@ -206,25 +206,25 @@ PluginComponent {
             if (--remaining === 0) finish();
         };
 
-            if (root.showPRs) {
-                Proc.runCommand("githubNotifier.prList", prArgs(), (stdout, exitCode) => {
-                    if (exitCode === 0) {
-                        root.prList = parseGitHubList(stdout);
-                        root.prCount = root.prList.length;
-                    }
-                    done();
-                }, 0, 10000);
-            }
+        if (root.showPRs) {
+            Proc.runCommand("githubNotifier.prList", prArgs(), (stdout, exitCode) => {
+                if (exitCode === 0) {
+                    root.prList = parseGitHubList(stdout);
+                    root.prCount = root.prList.length;
+                }
+                done();
+            }, 0, 10000);
+        }
 
-            if (root.showIssues) {
-                Proc.runCommand("githubNotifier.issueList", issueArgs(), (stdout, exitCode) => {
-                    if (exitCode === 0) {
-                        root.issueList = parseGitHubList(stdout);
-                        root.issuesCount = root.issueList.length;
-                    }
-                    done();
-                }, 0, 10000);
-            }
+        if (root.showIssues) {
+            Proc.runCommand("githubNotifier.issueList", issueArgs(), (stdout, exitCode) => {
+                if (exitCode === 0) {
+                    root.issueList = parseGitHubList(stdout);
+                    root.issuesCount = root.issueList.length;
+                }
+                done();
+            }, 0, 10000);
+        }
 
     }
 
